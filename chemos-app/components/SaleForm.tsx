@@ -1,0 +1,262 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import AutocompleteInput from './AutocompleteInput';
+import type {
+  FeedOptions,
+  SaleFormPayload,
+  MarketStatusType,
+  CreateSaleResponse,
+} from '@/lib/types';
+
+interface SaleFormProps {
+  feedOptions: FeedOptions;
+  onSubmit: (payload: SaleFormPayload) => Promise<CreateSaleResponse>;
+}
+
+type ResultState = { msg: string; ok: boolean; detail?: string } | null;
+
+const DELIVERY_TERMS = ['CIF', 'CFR', 'FOB'];
+
+export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
+  const [saleType, setSaleType] = useState('GST Sale');
+  // Form state
+  const [companyFrom, setCompanyFrom] = useState('');
+  const [companyTo, setCompanyTo] = useState('');
+  const [product, setProduct] = useState('');
+  const [origin, setOrigin] = useState('');
+  const [make, setMake] = useState('');
+  const [packaging, setPackaging] = useState('');
+  const [port, setPort] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
+  const [payment, setPayment] = useState('');
+  const [deliveryTerm, setDeliveryTerm] = useState('');
+  const [storageDays, setStorageDays] = useState('');
+  const [transitTolerance, setTransitTolerance] = useState('');
+  const [marketPrice, setMarketPrice] = useState('');
+  const [marketStatus, setMarketStatus] = useState<MarketStatusType>('');
+  const [message, setMessage] = useState('');
+
+  // UI state
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<ResultState>(null);
+  const [dateValue, setDateValue] = useState('');
+  const [dateStamp, setDateStamp] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const d = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const t = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+      setDateValue(d);
+      setDateStamp(`${d}  ·  ${t}`);
+    };
+    update();
+    const id = setInterval(update, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const clearForm = () => {
+    setSaleType('GST Sale');
+    setCompanyFrom(''); setCompanyTo(''); setProduct(''); setOrigin(''); setMake(''); setPackaging(''); setPort('');
+    setQuantity(''); setPrice(''); setPayment(''); setDeliveryTerm(''); setStorageDays(''); setTransitTolerance(''); setMarketPrice(''); setMarketStatus(''); setMessage('');
+    setResult(null);
+  };
+
+  const handleSubmit = async () => {
+    setResult(null);
+    const qty = parseFloat(quantity);
+    const priceVal = parseFloat(price);
+
+    const missing: string[] = [];
+    if (!companyTo) missing.push('Company To');
+    if (!companyFrom) missing.push('Company From');
+    if (!product) missing.push('Product');
+    if (!Number.isFinite(qty) || qty <= 0) missing.push('Quantity');
+    if (!Number.isFinite(priceVal) || priceVal <= 0) missing.push('Price');
+    if (!port) missing.push('Port');
+    if (missing.length) {
+      setResult({ msg: 'Please fill: ' + missing.join(', '), ok: false });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const data = await onSubmit({
+        sale_type: saleType as 'GST Sale' | 'Bond Sale',
+        company_from: companyFrom,
+        company_to: companyTo,
+        product,
+        origin,
+        make,
+        packaging,
+        port,
+        quantity: qty,
+        price: priceVal,
+        payment,
+        delivery_term: deliveryTerm,
+        storage_days: parseFloat(storageDays) || 0,
+        market_price: parseFloat(marketPrice) || 0,
+        market_status: marketStatus,
+        // Add new fields
+        transit_tolerance: transitTolerance,
+        message,
+      });
+      setResult({
+        msg: `Sale #${data.id} recorded — ${qty.toLocaleString('en-IN')} MT @ ₹${priceVal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
+        ok: true,
+        detail: `${product} · ${companyTo} ← ${companyFrom} · Port: ${port}${deliveryTerm ? ' · ' + deliveryTerm : ''}`,
+      });
+      clearForm();
+    } catch (err: unknown) {
+      setResult({ msg: err instanceof Error ? err.message : 'Submission failed', ok: false });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div className="card-t"> New Sale</div>
+        <div className="card-meta">{dateStamp}</div>
+      </div>
+      <div className="card-body">
+
+        <div className="form-grid">
+          {/* Row 0: Sale Type */}
+          <div className="fg wide">
+            <label className="fl">Sale Type</label>
+            <select className="fi" value={saleType} onChange={e => setSaleType(e.target.value)}>
+              <option value="GST Sale">GST Sale</option>
+              <option value="Bond Sale">Bond Sale</option>
+            </select>
+          </div>
+
+          {/* Row 1: Date */}
+          <div className="fg">
+            <label className="fl">Date</label>
+            <input className="fi locked" value={dateValue} readOnly />
+          </div>
+
+          {/* Row 2: Company From, Company To */}
+          <div className="fg">
+            <label className="fl">Company From <span className="req">*</span></label>
+            <AutocompleteInput id="sf-company-from" value={companyFrom} onChange={setCompanyFrom}
+              options={feedOptions.companies} placeholder="Seller / supplier name" />
+          </div>
+          <div className="fg">
+            <label className="fl">Company To <span className="req">*</span></label>
+            <AutocompleteInput id="sf-company-to" value={companyTo} onChange={setCompanyTo}
+              options={feedOptions.companies} placeholder="Buyer / customer name" />
+          </div>
+
+          {/* Row 3: Product, Origin, Make */}
+          <div className="fg">
+            <label className="fl">Product <span className="req">*</span></label>
+            <AutocompleteInput id="sf-product" value={product} onChange={setProduct}
+              options={feedOptions.products} placeholder="e.g. VAM (Carbide Base)" />
+          </div>
+          <div className="fg">
+            <label className="fl">Origin</label>
+            <AutocompleteInput id="sf-origin" value={origin} onChange={setOrigin}
+              options={feedOptions.origins} placeholder="Country of origin" />
+          </div>
+          <div className="fg">
+            <label className="fl">Make</label>
+            <AutocompleteInput id="sf-make" value={make} onChange={setMake}
+              options={feedOptions.makes} placeholder="Manufacturer" />
+          </div>
+
+          {/* Row 4: Packaging, Port, Quantity (MT) */}
+          <div className="fg">
+            <label className="fl">Packaging</label>
+            <AutocompleteInput id="sf-packaging" value={packaging} onChange={setPackaging}
+              options={feedOptions.packagings} placeholder="e.g. Bulk, IBC, Drum" />
+          </div>
+          <div className="fg">
+            <label className="fl">Port <span className="req">*</span></label>
+            <select className="fi" value={port} onChange={e => setPort(e.target.value)}>
+              <option value="">Select port…</option>
+              {feedOptions.ports.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div className="fg">
+            <label className="fl">Quantity (MT) <span className="req">*</span></label>
+            <input className="fi" type="number" min={0} step={0.01} placeholder="500"
+              value={quantity} onChange={e => setQuantity(e.target.value)} />
+          </div>
+
+          {/* Row 5: Price (₹), Payment, Delivery Term */}
+          <div className="fg">
+            <label className="fl">Price (₹) <span className="req">*</span></label>
+            <input className="fi" type="number" min={0} step={0.01} placeholder="145.00"
+              value={price} onChange={e => setPrice(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">Payment</label>
+            <AutocompleteInput id="sf-payment" value={payment} onChange={setPayment}
+              options={feedOptions.payments} placeholder="e.g. 60 Days" />
+          </div>
+          <div className="fg">
+            <label className="fl">Delivery Term</label>
+            <select className="fi" value={deliveryTerm} onChange={e => setDeliveryTerm(e.target.value)}>
+              <option value="">Select…</option>
+              {DELIVERY_TERMS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Row 6: Storage Days, Transit Tolerance */}
+          <div className="fg">
+            <label className="fl">Storage Days</label>
+            <input className="fi" type="number" min={0} step={0.01} placeholder="0.00"
+              value={storageDays} onChange={e => setStorageDays(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">Transit Tolerance</label>
+            <input className="fi" type="text" placeholder="e.g. ±2%"
+              value={transitTolerance} onChange={e => setTransitTolerance(e.target.value)} />
+          </div>
+
+          {/* Row 7: Market Price, Market Status */}
+          <div className="fg">
+            <label className="fl">Market Price (₹)</label>
+            <input className="fi" type="number" min={0} step={0.01} placeholder="145.00"
+              value={marketPrice} onChange={e => setMarketPrice(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">Market Status</label>
+            <AutocompleteInput id="sf-market-status" value={marketStatus} onChange={v => setMarketStatus(v as MarketStatusType)}
+              options={['Ready Market', 'Incoming', 'Spot']} placeholder="Market status" />
+          </div>
+
+          {/* Row 8: Message */}
+          <div className="fg wide">
+            <label className="fl">Message</label>
+            <textarea className="fi" placeholder="Write your message here..." value={message} onChange={e => setMessage(e.target.value)} rows={2} />
+          </div>
+        </div>
+
+        <div className="btn-row">
+          <button className="btn btn-red" disabled={submitting} onClick={handleSubmit}>
+            {submitting ? '⏳ Saving…' : '💾 Submit'}
+          </button>
+          <button className="btn btn-ghost" onClick={clearForm}>Clear</button>
+        </div>
+
+        {result && (
+          <div className={`result ${result.ok ? 'ok' : 'err'}`}>
+            {result.ok ? '✓ ' : '✗ '}
+            {result.msg}
+            {result.detail && <div className="result-detail">{result.detail}</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

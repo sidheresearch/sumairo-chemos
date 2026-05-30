@@ -1,0 +1,143 @@
+export type AvailabilityType = 'Ready' | 'Incoming' | '';
+export type MarketStatusType = 'Ready Market' | 'Incoming' | 'Spot' | '';
+
+export interface PunchEntry {
+  id: number;
+  ts: string;
+  company_to: string;
+  company_from: string;
+  product: string;
+  vessel_name: string;
+  shipment: string;
+  quantity: number;
+  price_fc: number;
+  currency: string;
+  offer_usd: number;
+  exchange_rate: number;
+  price_inr: number;
+  delivery_term: string;
+  payment_days: string;
+  port: string;
+  market_price: number;
+  market_status: MarketStatusType;
+  cost_price: number;
+  replacement_cost: number;
+  expense: number;
+  custom_duty: number;
+  sws: number;
+  add: number;
+  other_expense: number;
+  make: string;
+  packaging: string;
+  origin: string;
+}
+
+export interface SalePunchPayload {
+  company_to: string;
+  company_from: string;
+  product: string;
+  vessel_name: string;
+  shipment: string;
+  quantity: number;
+  price_fc: number;
+  currency: string;
+  offer_usd: number;
+  exchange_rate: number;
+  price_inr: number;
+  delivery_term: string;
+  payment_days: string;
+  port: string;
+  market_price: number;
+  market_status: MarketStatusType;
+  cost_price: number;
+  replacement_cost: number;
+  expense: number;
+  custom_duty: number;
+  sws: number;
+  add: number;
+  other_expense: number;
+  make: string;
+  packaging: string;
+  origin: string;
+}
+
+export interface FeedOptions {
+  products: string[];
+  ports: string[];
+  companies: string[];
+  makes: string[];
+  packagings: string[];
+  origins: string[];
+  payments: string[];
+  shipments: string[];
+}
+
+export interface PunchListResponse {
+  rows: PunchEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreatePunchResponse {
+  id: number;
+}
+
+// ── Sale Form ──────────────────────────────────────────────────────────────
+
+export type SaleType = 'GST Sale' | 'Bond Sale';
+
+export interface SaleEntry {
+  id: number;
+  ts: string;
+  sale_type: SaleType;
+  company_to: string;
+  company_from: string;
+  product: string;
+  quantity: number;
+  price: number;
+  payment: string;
+  delivery_term: string;
+  port: string;
+  market_price: number;
+  market_status: MarketStatusType;
+  storage_days: number;
+  transit_tolerance: string;
+  make: string;
+  packaging: string;
+  origin: string;
+  message: string;
+}
+
+export interface SaleFormPayload {
+  sale_type: SaleType;
+  company_to: string;
+  company_from: string;
+  product: string;
+  quantity: number;
+  price: number;
+  payment: string;
+  delivery_term: string;
+  port: string;
+  market_price: number;
+  market_status: MarketStatusType;
+  storage_days: number;
+  transit_tolerance: string;
+  make: string;
+  packaging: string;
+  origin: string;
+  message: string;
+}
+
+export interface SaleListResponse {
+  rows: SaleEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreateSaleResponse {
+  id: number;
+}
