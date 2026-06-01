@@ -22,6 +22,12 @@ const DELIVERY_TERMS = ['CIF', 'CFR', 'FOB'];
 export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardProps) {
   // Form state
   const [companyTo, setCompanyTo] = useState('');
+  // Only allow these three companies for Company To
+  const COMPANY_TO_OPTIONS = [
+    'KLJ Resources',
+    'Sidhe Petrochemical',
+    'Sidhgun Technologies',
+  ];
   const [companyFrom, setCompanyFrom] = useState('');
   const [product, setProduct] = useState('');
   const [vesselName, setVesselName] = useState('');
@@ -173,7 +179,7 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
           <div className="fg">
             <label className="fl">Company To <span className="req">*</span></label>
             <AutocompleteInput id="f-company-to" value={companyTo} onChange={setCompanyTo}
-              options={feedOptions.companies} placeholder="Buyer / customer name" />
+              options={COMPANY_TO_OPTIONS} placeholder="Buyer / customer name" />
           </div>
           
 

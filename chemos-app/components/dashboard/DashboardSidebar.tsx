@@ -110,7 +110,7 @@ export default function DashboardSidebar({ activeModule, onModuleChange }: Dashb
               <line x1="9" y1="15" x2="15" y2="15" />
             </svg>
           </span>
-          Sale Entry
+          Purchase Form
         </Link>
         <Link href="/sales" className="db-sb-item" style={{ display:'flex', textDecoration:'none' }}>
           <span className="db-sb-icon">

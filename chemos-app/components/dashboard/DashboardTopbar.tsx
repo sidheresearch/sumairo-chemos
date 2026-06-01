@@ -110,7 +110,7 @@ export default function DashboardTopbar({
           onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--white)')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--gray)')}
         >
-          Sale Entry
+          Purchase Form
         </Link>
         <Link href="/sales" style={{ color: 'var(--gray)', textDecoration: 'none', fontSize: 11, fontWeight: 600, padding: '6px 10px', borderRadius: 5, transition: 'all .15s' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--white)')}
