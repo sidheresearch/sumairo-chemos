@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import UserSwitcher from './UserSwitcher';
 
 export default function Header() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -43,6 +44,7 @@ export default function Header() {
         <Link className="dash-link" href="/dashboard">
           📊 Dashboard
         </Link>
+        <UserSwitcher />
         <button
           className="theme-toggle"
           onClick={toggleTheme}

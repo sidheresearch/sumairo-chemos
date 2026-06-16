@@ -12,49 +12,58 @@ import type {
 interface SaleEntryCardProps {
   feedOptions: FeedOptions;
   onSubmit: (payload: SalePunchPayload) => Promise<CreatePunchResponse>;
+  initialData?: any;
 }
 
 type ResultState = { msg: string; ok: boolean; detail?: string } | null;
 
 const DELIVERY_TERMS = ['CIF', 'CFR', 'FOB'];
+const PURCHASE_TYPES = ['Import', 'HSS', 'Local', 'Tow'];
 
 
-export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardProps) {
+export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: SaleEntryCardProps) {
   // Form state
   const [companyTo, setCompanyTo] = useState('');
-  // Only allow these three companies for Company To
   const COMPANY_TO_OPTIONS = [
     'KLJ Resources',
     'Sidhe Petrochemical',
     'Sidhgun Technologies',
   ];
-  const [companyFrom, setCompanyFrom] = useState('');
-  const [product, setProduct] = useState('');
+  const [purchaseType, setPurchaseType] = useState(initialData?.purchase_type || '');
+  const [companyFrom, setCompanyFrom] = useState(initialData?.company_from || '');
+  const [product, setProduct] = useState(initialData?.product || '');
   const [vesselName, setVesselName] = useState('');
-  const [shipment, setShipment] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [priceFc, setPriceFc] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [shipmentStart, setShipmentStart] = useState('');
+  const [shipmentEnd, setShipmentEnd] = useState('');
+  const [quantity, setQuantity] = useState(initialData?.quantity ? String(initialData.quantity) : '');
+  const [priceFc, setPriceFc] = useState(initialData?.price_fc ? String(initialData.price_fc) : '');
+  const [currency, setCurrency] = useState(initialData?.currency || 'USD');
   const [offerUsd, setOfferUsd] = useState('');
-  const [exchangeRate, setExchangeRate] = useState('');
+  const [exchangeRate, setExchangeRate] = useState(initialData?.exchange_rate ? String(initialData.exchange_rate) : '');
   const [deliveryTerm, setDeliveryTerm] = useState('');
   const [paymentDays, setPaymentDays] = useState('');
-  const [port, setPort] = useState('');
-  const [marketPrice, setMarketPrice] = useState('');
+  const [port, setPort] = useState(initialData?.port || '');
+  const [dischargePorts, setDischargePorts] = useState<string[]>(initialData?.discharge_ports || []);
+  const [dischargePortsOpen, setDischargePortsOpen] = useState(false); // dropdown open state
+  const [marketPrice, setMarketPrice] = useState(initialData?.market_price ? String(initialData.market_price) : '');
   const [marketStatus, setMarketStatus] = useState<MarketStatusType>('');
   const [costPrice, setCostPrice] = useState('');
   const [replacementCost, setReplacementCost] = useState('');
 
-  // New columns
-  const [expense, setExpense] = useState(''); // Freight & Insurance
-  const [customDuty, setCustomDuty] = useState(''); // BCD
-  const [sws, setSws] = useState(''); // SWS
-  const [add, setAdd] = useState(''); // ADD
+  const [expense, setExpense] = useState('');
+  const [customDuty, setCustomDuty] = useState('');
+  const [sws, setSws] = useState('');
+  const [add, setAdd] = useState('');
   const [otherExpense, setOtherExpense] = useState('');
+  const [addUsd, setAddUsd] = useState(initialData?.add_usd ? String(initialData.add_usd) : '');
 
   const [make, setMake] = useState('');
   const [packaging, setPackaging] = useState('');
-  const [origin, setOrigin] = useState('');
+  const [origin, setOrigin] = useState(initialData?.origin || '');
+  const [priceType, setPriceType] = useState(initialData?.price_type || 'Fixed Price');
+  const [paymentTerm, setPaymentTerm] = useState(initialData?.payment_term || '');
+  const [etd, setEtd] = useState(initialData?.etd || '');
+  const [eta, setEta] = useState(initialData?.eta || '');
 
   // Price (₹/kg) = Price(FC) × Exchange Rate / 1000
   const computedPriceInr =
@@ -64,9 +73,6 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
       ? computedPriceInr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '';
 
-  // Total Price = Price(₹/kg) + BCD_amount + SWS_amount + ADD(₹) + OtherExpense(₹)
-  // BCD_amount  = (BCD% / 100) × Price(₹/kg)
-  // SWS_amount  = (BCD% / 100) × Price(₹/kg) × (SWS% / 100)  =  BCD_amount × (SWS% / 100)
   const bcdAmount = (parseFloat(customDuty) || 0) / 100 * computedPriceInr;
   const swsAmount = bcdAmount * (parseFloat(sws) || 0) / 100;
   const computedTotalPrice =
@@ -82,6 +88,7 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
   const [dateValue, setDateValue] = useState('');
   const [dateStamp, setDateStamp] = useState('');
 
+  // Date/time updater
   useEffect(() => {
     const update = () => {
       const now = new Date();
@@ -95,13 +102,31 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
     return () => clearInterval(id);
   }, []);
 
+  // Close discharge ports dropdown on outside click
+  useEffect(() => {
+    if (!dischargePortsOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('#discharge-ports-wrapper')) setDischargePortsOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dischargePortsOpen]);
+
   const clearForm = () => {
     setCompanyTo(''); setCompanyFrom(''); setProduct(''); setVesselName('');
-    setShipment(''); setQuantity(''); setPriceFc(''); setCurrency('USD'); setOfferUsd(''); setExchangeRate('');
+    setShipmentStart(''); setShipmentEnd(''); setQuantity(''); setPriceFc(''); setCurrency('USD'); setOfferUsd(''); setExchangeRate('');
     setDeliveryTerm(''); setPaymentDays(''); setPort(''); setMarketPrice('');
     setMarketStatus(''); setCostPrice(''); setReplacementCost(''); setMake('');
     setExpense(''); setCustomDuty(''); setSws(''); setAdd(''); setOtherExpense('');
+    setPurchaseType('');
     setPackaging(''); setOrigin(''); setResult(null);
+    setDischargePorts([]);
+    setPriceType('Fixed Price');
+    setPaymentTerm('');
+    setEtd('');
+    setEta('');
+    setAddUsd('');
   };
 
   const handleSubmit = async () => {
@@ -127,10 +152,11 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
     try {
       const data = await onSubmit({
         company_to: companyTo,
+        purchase_type: purchaseType,
         company_from: companyFrom,
         product,
         vessel_name: vesselName,
-        shipment,
+        shipment: shipmentStart && shipmentEnd ? `${shipmentStart} to ${shipmentEnd}` : '',
         quantity: qty,
         price_fc: fc,
         currency,
@@ -152,7 +178,13 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
         sws: parseFloat(sws) || 0,
         add: parseFloat(add) || 0,
         other_expense: parseFloat(otherExpense) || 0,
-      });
+        add_usd: parseFloat(addUsd) || 0,
+        discharge_ports: dischargePorts,
+        price_type: priceType,
+        payment_term: paymentTerm,
+        etd: etd || undefined,
+        eta: eta || undefined,
+      } as any);
       setResult({
         msg: `Punched in #${data.id} — ${qty.toLocaleString('en-IN')} MT · ${currency} ${fc.toLocaleString('en-IN')} × ₹${exRate} = ₹${computedPriceInr.toLocaleString('en-IN', { maximumFractionDigits: 2 })}/kg`,
         ok: true,
@@ -174,28 +206,38 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
       </div>
       <div className="card-body">
 
-        <div className="form-grid">
-          {/* Row 1: Company To, Date */}
+        <div className="form-grid top-row">
           <div className="fg">
-            <label className="fl">Company To <span className="req">*</span></label>
+            <label className="fl">Purchase Type</label>
+            <select className="fi" value={purchaseType} onChange={e => setPurchaseType(e.target.value)}>
+              <option value="">Select…</option>
+              {PURCHASE_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div className="fg">
+            <label className="fl">Date</label>
+            <input className="fi locked" value={dateValue} readOnly />
+          </div>
+        </div>
+
+        <div className="form-grid">
+          {/* Buyer */}
+          <div className="fg">
+            <label className="fl">Buyer <span className="req">*</span></label>
             <AutocompleteInput id="f-company-to" value={companyTo} onChange={setCompanyTo}
               options={COMPANY_TO_OPTIONS} placeholder="Buyer / customer name" />
           </div>
-          
 
-           <div className="fg">
-            <label className="fl">Company From <span className="req">*</span></label>
+          {/* Seller */}
+          <div className="fg">
+            <label className="fl">Seller <span className="req">*</span></label>
             <AutocompleteInput id="f-company-from" value={companyFrom} onChange={setCompanyFrom}
               options={feedOptions.companies} placeholder="Seller / supplier name" />
           </div>
 
-          {/* Row 2: Company From */}
-         <div className="fg">
-            <label className="fl">Date</label>
-            <input className="fi locked" value={dateValue} readOnly />
-          </div>
-
-          {/* Row 3: Product, Origin, Make */}
+          {/* Product, Origin, Make */}
           <div className="fg">
             <label className="fl">Product <span className="req">*</span></label>
             <AutocompleteInput id="f-product" value={product} onChange={setProduct}
@@ -212,19 +254,22 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
               options={feedOptions.makes} placeholder="Manufacturer" />
           </div>
 
-          {/* Row 4: Vessel Name, Shipment, Port */}
+          {/* Vessel, Shipment, Load Port */}
           <div className="fg">
             <label className="fl">Vessel Name</label>
             <input className="fi" value={vesselName} onChange={e => setVesselName(e.target.value)}
               placeholder="Ship / vessel name" />
           </div>
           <div className="fg">
-            <label className="fl">Shipment</label>
-            <AutocompleteInput id="f-shipment" value={shipment} onChange={setShipment}
-              options={feedOptions.shipments} placeholder="e.g. June Loading" />
+            <label className="fl">Shipment Start</label>
+            <input className="fi" type="date" value={shipmentStart} onChange={e => setShipmentStart(e.target.value)} />
           </div>
           <div className="fg">
-            <label className="fl">Port <span className="req">*</span></label>
+            <label className="fl">Shipment End</label>
+            <input className="fi" type="date" value={shipmentEnd} onChange={e => setShipmentEnd(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">Load Port <span className="req">*</span></label>
             <select className="fi" value={port} onChange={e => setPort(e.target.value)}>
               <option value="">Select port…</option>
               {feedOptions.ports.map((p) => (
@@ -233,7 +278,113 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
             </select>
           </div>
 
-          {/* Row 5: Packaging, Quantity, Price(FC), Currency, Exchange Rate, Price (₹/kg) */}
+          {/* Discharge Ports — multi-select dropdown */}
+          <div className="fg">
+            <label className="fl">Discharge Ports</label>
+            <div id="discharge-ports-wrapper" style={{ position: 'relative' }}>
+              {/* Trigger box */}
+              <div
+                className="fi"
+                onClick={() => setDischargePortsOpen(v => !v)}
+                style={{
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '4px',
+                  minHeight: '38px',
+                  paddingTop: dischargePorts.length ? '5px' : undefined,
+                  paddingBottom: dischargePorts.length ? '5px' : undefined,
+                }}
+              >
+                {dischargePorts.length === 0 ? (
+                  <span style={{ color: 'var(--placeholder, #999)', flex: 1 }}>Select ports…</span>
+                ) : (
+                  dischargePorts.map(p => (
+                    <span
+                      key={p}
+                      style={{
+                        background: 'var(--accent, #3b82f6)',
+                        color: '#fff',
+                        borderRadius: '4px',
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      {p}
+                      <span
+                        onClick={e => {
+                          e.stopPropagation();
+                          setDischargePorts(dischargePorts.filter(x => x !== p));
+                        }}
+                        style={{ cursor: 'pointer', fontWeight: 700, lineHeight: 1 }}
+                      >
+                        ×
+                      </span>
+                    </span>
+                  ))
+                )}
+                {/* Chevron */}
+                <span style={{ marginLeft: 'auto', paddingLeft: '6px', color: 'var(--muted, #888)' }}>
+                  {dischargePortsOpen ? '▴' : '▾'}
+                </span>
+              </div>
+
+              {/* Dropdown list */}
+              {dischargePortsOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 50,
+                    background: 'var(--bg-input, #fff)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    marginTop: '2px',
+                  }}
+                >
+                  {feedOptions.ports.map(p => (
+                    <label
+                      key={p}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        background: dischargePorts.includes(p) ? 'var(--accent-light, #eff6ff)' : 'transparent',
+                        transition: 'background 0.1s',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={dischargePorts.includes(p)}
+                        onChange={e => {
+                          setDischargePorts(e.target.checked
+                            ? [...dischargePorts, p]
+                            : dischargePorts.filter(x => x !== p));
+                        }}
+                        onClick={e => e.stopPropagation()}
+                      />
+                      {p}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Packaging, Market Status, Quantity, Price */}
           <div className="fg">
             <label className="fl">Packaging</label>
             <AutocompleteInput id="f-packaging" value={packaging} onChange={setPackaging}
@@ -257,6 +408,13 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
             <label className="fl">Price (FC)</label>
             <input className="fi" type="number" min={0} step={0.01} placeholder="0.00"
               value={priceFc} onChange={e => setPriceFc(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">Price Type</label>
+            <select className="fi" value={priceType} onChange={e => setPriceType(e.target.value)}>
+              <option value="Formula Price">Formula Price</option>
+              <option value="Fixed Price">Fixed Price</option>
+            </select>
           </div>
           <div className="fg">
             <label className="fl">Currency</label>
@@ -302,7 +460,7 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
             <input className="fi locked price-computed" value={priceDisplay} readOnly placeholder="" />
           </div>
 
-          {/* Row 6: Delivery Term, Payment, Expense (Freight & Insurance) */}
+          {/* Delivery, Payment */}
           <div className="fg">
             <label className="fl">Inco Term</label>
             <select className="fi" value={deliveryTerm} onChange={e => setDeliveryTerm(e.target.value)}>
@@ -310,6 +468,15 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
               {DELIVERY_TERMS.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
+            </select>
+          </div>
+          <div className="fg">
+            <label className="fl">Payment Term</label>
+            <select className="fi" value={paymentTerm} onChange={e => setPaymentTerm(e.target.value)}>
+              <option value="">Select…</option>
+              <option value="DA">DA</option>
+              <option value="CAD">CAD</option>
+              <option value="LC">LC</option>
             </select>
           </div>
           <div className="fg">
@@ -323,7 +490,7 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
               value={expense} onChange={e => setExpense(e.target.value)} />
           </div>
 
-          {/* Row 7: Custom Duty (BCD), SWS, ADD, Other Expense */}
+          {/* Duties */}
           <div className="fg">
             <label className="fl">Custom Duty BCD (%/kg)</label>
             <input className="fi" type="number" min={0} step={0.01} placeholder="e.g. 7.5"
@@ -333,6 +500,11 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
             <label className="fl">SWS (%)</label>
             <input className="fi" type="number" min={0} step={0.01} placeholder="e.g. 10"
               value={sws} onChange={e => setSws(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">ADD ($/MT)</label>
+            <input className="fi" type="number" min={0} step={0.01} placeholder="0.00"
+              value={addUsd} onChange={e => setAddUsd(e.target.value)} />
           </div>
           <div className="fg">
             <label className="fl">ADD (₹)</label>
@@ -345,14 +517,13 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
               value={otherExpense} onChange={e => setOtherExpense(e.target.value)} />
           </div>
 
-
-          {/* Row 8: Total Price (computed) */}
+          {/* Total Price */}
           <div className="fg">
             <label className="fl">Total Price (₹/kg)</label>
             <input className="fi locked price-computed" value={totalPriceDisplay} readOnly placeholder="" />
           </div>
 
-          {/* Row 9: Replacement Cost(₹), Market Price(₹), Market Status */}
+          {/* Market */}
           <div className="fg">
             <label className="fl">Replacement Cost (₹/kg)</label>
             <input className="fi" type="number" min={0} step={0.01} placeholder="0.00"
@@ -362,6 +533,17 @@ export default function SaleEntryCard({ feedOptions, onSubmit }: SaleEntryCardPr
             <label className="fl">Market Price (₹/kg)</label>
             <input className="fi" type="number" min={0} step={0.01} placeholder="0.00"
               value={marketPrice} onChange={e => setMarketPrice(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="form-grid">
+          <div className="fg">
+            <label className="fl">ETD</label>
+            <input className="fi" type="date" value={etd} onChange={e => setEtd(e.target.value)} />
+          </div>
+          <div className="fg">
+            <label className="fl">ETA</label>
+            <input className="fi" type="date" value={eta} onChange={e => setEta(e.target.value)} />
           </div>
         </div>
 

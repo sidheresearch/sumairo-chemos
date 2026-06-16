@@ -1,106 +1,88 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Header from '@/components/Header';
-import Toast from '@/components/Toast';
-import SaleEntryCard from '@/components/SaleEntryCard';
-import TodayPunches from '@/components/TodayPunches';
-import { fetchFeedOptions, fetchTodayPunches, createPunch, deletePunch } from '@/lib/api';
-import type { PunchEntry, FeedOptions, SalePunchPayload } from '@/lib/types';
+import { useState } from 'react';
+import type { Currency } from '@/components/dashboard/types';
+import type { DashboardModule } from '@/components/dashboard/DashboardSidebar';
 
-interface ToastState {
-  message: string;
-  ok: boolean;
-  visible: boolean;
-}
+import { KpiGrid } from '@/components/dashboard/KpiCard';
+import PipelineSlider from '@/components/dashboard/PipelineSlider';
+import InventoryCommandCentre from '@/components/dashboard/InventoryCommandCentre';
+import AlertsPanel from '@/components/dashboard/AlertsPanel';
+import RevenueChartCard from '@/components/dashboard/modules/RevenueChartCard';
+import ForecastChartCard from '@/components/dashboard/modules/ForecastChartCard';
+import ProcurementModule from '@/components/dashboard/modules/ProcurementModule';
+import ScmModule from '@/components/dashboard/modules/ScmModule';
+import FinanceModule from '@/components/dashboard/modules/FinanceModule';
+import ResearchModule from '@/components/dashboard/modules/ResearchModule';
 
-const EMPTY_OPTIONS: FeedOptions = {
-  products: [],
-  ports: [],
-  companies: [],
-  makes: [],
-  packagings: [],
-  origins: [],
-  payments: [],
-  shipments: [],
-};
+import {
+  MOCK_KPIS,
+  MOCK_ALERTS,
+  MOCK_PIPELINE,
+  MOCK_ICC,
+  MOCK_VENDORS,
+  MOCK_PORTS,
+  MOCK_PROSPECTS,
+  MOCK_TOP_CUSTOMERS,
+  MOCK_TOP_SUPPLIERS,
+  MOCK_KPI_DRIVERS,
+  MOCK_CASHFLOW,
+  MOCK_FINANCE_OFFERS,
+  MOCK_SHOCK_CHEMICALS,
+  MOCK_NEWS,
+  MOCK_REVENUE,
+} from '@/components/dashboard/data/mockData';
 
 export default function HomePage() {
-  const [feedOptions, setFeedOptions] = useState<FeedOptions>(EMPTY_OPTIONS);
-  const [entries, setEntries] = useState<PunchEntry[]>([]);
-  const [toast, setToast] = useState<ToastState>({ message: '', ok: true, visible: false });
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const LIMIT = 20;
-
-  const showToast = useCallback((message: string, ok = true) => {
-    setToast({ message, ok, visible: true });
-    setTimeout(() => setToast((p) => ({ ...p, visible: false })), 3000);
-  }, []);
-
-  const loadPunches = useCallback(async (targetPage = 1) => {
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const data = await fetchTodayPunches(today, targetPage, LIMIT);
-      setEntries(data.rows ?? []);
-      setTotalPages(data.totalPages ?? 1);
-      setTotal(data.total ?? 0);
-    } catch {
-      /* API may not be ready yet */
-    }
-  }, [LIMIT]);
-
-  useEffect(() => {
-    fetchFeedOptions().then(setFeedOptions).catch(() => {});
-    loadPunches(page);
-  }, [loadPunches, page]);
-
-  const handleSubmitPunch = async (payload: SalePunchPayload) => {
-    const data = await createPunch(payload);
-    showToast(`Sale #${data.id} recorded`, true);
-    setPage(1);
-    await loadPunches(1);
-    return data;
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await deletePunch(id);
-      showToast(`#${id} deleted`, true);
-      await loadPunches(page);
-    } catch {
-      showToast('Delete failed', false);
-    }
-  };
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
+  const [currency] = useState<Currency>('inr');
+  const [activeModule] = useState<DashboardModule>('overview');
 
   return (
     <>
-      <Header />
-      <main className="container">
-        <div className="page-head">
-          <div className="title-block">
-            <div className="crumb"></div>
-            <h1>Purchase Form</h1>
-            
-          </div>
-        </div>
+      {/* ── Overview module ────────────────────────────────────────── */}
+      {activeModule === 'overview' && (
+        <>
+          {/* KPI cards */}
+          <KpiGrid kpis={MOCK_KPIS} currency={currency} />
 
-        <SaleEntryCard feedOptions={feedOptions} onSubmit={handleSubmitPunch} />
-        <TodayPunches
-          entries={entries}
-          onDelete={handleDelete}
-          page={page}
-          totalPages={totalPages}
-          total={total}
-          onPageChange={handlePageChange}
+          {/* Pipeline */}
+          <PipelineSlider stages={MOCK_PIPELINE} />
+
+          {/* ICC + Alerts row */}
+          <div className="db-grid-icc-alerts">
+            <InventoryCommandCentre items={MOCK_ICC} currency={currency} />
+            <AlertsPanel alerts={MOCK_ALERTS} />
+          </div>
+
+          {/* Revenue + Forecast charts */}
+          <div className="db-grid-2">
+            <RevenueChartCard data={MOCK_REVENUE} />
+            <ForecastChartCard />
+          </div>
+        </>
+      )}
+
+      {/* ── Procurement module ─────────────────────────────────────── */}
+      {activeModule === 'procurement' && <ProcurementModule vendors={MOCK_VENDORS} />}
+
+      {/* ── SCM Intelligence module ────────────────────────────────── */}
+      {activeModule === 'scm' && (
+        <ScmModule
+          topCustomers={MOCK_TOP_CUSTOMERS}
+          topSuppliers={MOCK_TOP_SUPPLIERS}
+          kpiDrivers={MOCK_KPI_DRIVERS}
+          ports={MOCK_PORTS}
+          prospects={MOCK_PROSPECTS}
         />
-      </main>
-      <Toast message={toast.message} ok={toast.ok} visible={toast.visible} />
+      )}
+
+      {/* ── Finance module ─────────────────────────────────────────── */}
+      {activeModule === 'finance' && (
+        <FinanceModule offers={MOCK_FINANCE_OFFERS} cashflow={MOCK_CASHFLOW} currency={currency} />
+      )}
+
+      {/* ── Research & Analysis module ─────────────────────────────── */}
+      {activeModule === 'research' && <ResearchModule shockChemicals={MOCK_SHOCK_CHEMICALS} news={MOCK_NEWS} />}
     </>
   );
 }

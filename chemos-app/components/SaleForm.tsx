@@ -12,31 +12,34 @@ import type {
 interface SaleFormProps {
   feedOptions: FeedOptions;
   onSubmit: (payload: SaleFormPayload) => Promise<CreateSaleResponse>;
+  initialData?: Partial<SaleFormPayload>;
 }
 
 type ResultState = { msg: string; ok: boolean; detail?: string } | null;
 
 const DELIVERY_TERMS = ['CIF', 'CFR', 'FOB'];
 
-export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
-  const [saleType, setSaleType] = useState('GST Sale');
+export default function SaleForm({ feedOptions, onSubmit, initialData }: SaleFormProps) {
+  const [saleType, setSaleType] = useState(initialData?.sale_type || 'GST Sale');
   // Form state
   const [companyFrom, setCompanyFrom] = useState('');
-  const [companyTo, setCompanyTo] = useState('');
-  const [product, setProduct] = useState('');
+  const [companyTo, setCompanyTo] = useState(initialData?.company_to || '');
+  const [product, setProduct] = useState(initialData?.product || '');
   const [origin, setOrigin] = useState('');
   const [make, setMake] = useState('');
   const [packaging, setPackaging] = useState('');
-  const [port, setPort] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [price, setPrice] = useState('');
-  const [payment, setPayment] = useState('');
+  const [port, setPort] = useState(initialData?.port || '');
+  const [quantity, setQuantity] = useState(initialData?.quantity ? String(initialData.quantity) : '');
+  const [price, setPrice] = useState(initialData?.price ? String(initialData.price) : '');
+  const [payment, setPayment] = useState(initialData?.payment || '');
   const [deliveryTerm, setDeliveryTerm] = useState('');
-  const [storageDays, setStorageDays] = useState('');
+  const [storageDays, setStorageDays] = useState(initialData?.storage_days ? String(initialData.storage_days) : '');
   const [transitTolerance, setTransitTolerance] = useState('');
   const [marketPrice, setMarketPrice] = useState('');
   const [marketStatus, setMarketStatus] = useState<MarketStatusType>('');
   const [message, setMessage] = useState('');
+  const [salesPerson, setSalesPerson] = useState(initialData?.sales_person || '');
+  const [brokerName, setBrokerName] = useState(initialData?.broker_name || '');
 
   // UI state
   const [submitting, setSubmitting] = useState(false);
@@ -61,6 +64,7 @@ export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
     setSaleType('GST Sale');
     setCompanyFrom(''); setCompanyTo(''); setProduct(''); setOrigin(''); setMake(''); setPackaging(''); setPort('');
     setQuantity(''); setPrice(''); setPayment(''); setDeliveryTerm(''); setStorageDays(''); setTransitTolerance(''); setMarketPrice(''); setMarketStatus(''); setMessage('');
+    setSalesPerson(''); setBrokerName('');
     setResult(null);
   };
 
@@ -102,6 +106,8 @@ export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
         // Add new fields
         transit_tolerance: transitTolerance,
         message,
+        sales_person: salesPerson,
+        broker_name: brokerName,
       });
       setResult({
         msg: `Sale #${data.id} recorded — ${qty.toLocaleString('en-IN')} MT @ ₹${priceVal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
@@ -128,9 +134,11 @@ export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
           {/* Row 0: Sale Type */}
           <div className="fg wide">
             <label className="fl">Sale Type</label>
-            <select className="fi" value={saleType} onChange={e => setSaleType(e.target.value)}>
-              <option value="GST Sale">GST Sale</option>
-              <option value="Bond Sale">Bond Sale</option>
+            <select className="fi" value={saleType} onChange={e => setSaleType(e.target.value as 'GST Sale' | 'Bond Sale')}>
+              <option value="GST Sale">Export</option>
+              <option value="Bond Sale">Local</option>
+              <option value="GST Sale">HSS</option>
+              <option value="Bond Sale">TOW</option>
             </select>
           </div>
 
@@ -158,7 +166,7 @@ export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
             <AutocompleteInput id="sf-product" value={product} onChange={setProduct}
               options={feedOptions.products} placeholder="e.g. VAM (Carbide Base)" />
           </div>
-          <div className="fg">
+          {/* <div className="fg">
             <label className="fl">Origin</label>
             <AutocompleteInput id="sf-origin" value={origin} onChange={setOrigin}
               options={feedOptions.origins} placeholder="Country of origin" />
@@ -167,7 +175,7 @@ export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
             <label className="fl">Make</label>
             <AutocompleteInput id="sf-make" value={make} onChange={setMake}
               options={feedOptions.makes} placeholder="Manufacturer" />
-          </div>
+          </div> */}
 
           {/* Row 4: Packaging, Port, Quantity (MT) */}
           <div className="fg">
@@ -236,6 +244,14 @@ export default function SaleForm({ feedOptions, onSubmit }: SaleFormProps) {
           </div>
 
           {/* Row 8: Message */}
+          <div className="fg">
+            <label className="fl">Sales Person</label>
+            <input className="fi" value={salesPerson} onChange={e => setSalesPerson(e.target.value)} placeholder="Name" />
+          </div>
+          <div className="fg">
+            <label className="fl">Broker Name</label>
+            <input className="fi" value={brokerName} onChange={e => setBrokerName(e.target.value)} placeholder="Broker" />
+          </div>
           <div className="fg wide">
             <label className="fl">Message</label>
             <textarea className="fi" placeholder="Write your message here..." value={message} onChange={e => setMessage(e.target.value)} rows={2} />

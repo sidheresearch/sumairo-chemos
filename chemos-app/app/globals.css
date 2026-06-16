@@ -488,6 +488,16 @@ select.fi option { background: var(--navy-mid); color: var(--white); }
 }
 .punch-del:hover { color: var(--red); background: rgba(230, 57, 70, 0.08); }
 
+/* ═══ MODAL CONTENT OVERRIDES ═══ */
+/* Cards inside a modal need solid backgrounds — modal sits over a live page */
+.modal-content .card {
+  background: var(--navy-light);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="light"] .modal-content .card {
+  background: rgba(255, 255, 255, 1);
+}
+
 /* ═══ MODAL ═══ */
 .modal-bg {
   position: fixed;

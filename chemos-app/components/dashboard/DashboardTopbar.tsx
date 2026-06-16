@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import type { Currency, Period, Notification } from './types';
+import UserSwitcher from '../UserSwitcher';
 
 interface DashboardTopbarProps {
   period: Period;
@@ -27,6 +28,31 @@ export default function DashboardTopbar({
   const avatarRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'light' || stored === 'dark') {
+        setTheme(stored);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    } catch (e) {}
+  }, [theme, mounted]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -105,19 +131,17 @@ export default function DashboardTopbar({
 
       {/* Right — Actions */}
       <div className="db-tb-right">
-        {/* Nav links to forms */}
-        <Link href="/" style={{ color: 'var(--gray)', textDecoration: 'none', fontSize: 11, fontWeight: 600, padding: '6px 10px', borderRadius: 5, transition: 'all .15s' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--white)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--gray)')}
+        {/* Theme toggle (replaces Purchase/Sale links) */}
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme` : 'Toggle theme'}
+          aria-label={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme` : 'Toggle theme'}
+          style={{ fontSize: 16, padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+          suppressHydrationWarning
         >
-          Purchase Form
-        </Link>
-        <Link href="/sales" style={{ color: 'var(--gray)', textDecoration: 'none', fontSize: 11, fontWeight: 600, padding: '6px 10px', borderRadius: 5, transition: 'all .15s' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--white)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--gray)')}
-        >
-          Sale Form
-        </Link>
+          {mounted ? (theme === 'dark' ? '☀️' : '🌙') : '🌙'}
+        </button>
 
         {/* Search */}
         <div className="db-search">
@@ -166,6 +190,9 @@ export default function DashboardTopbar({
             </svg>
           </button>
         </div>
+
+        {/* User Switcher for Testing */}
+        <UserSwitcher />
 
         {/* Avatar */}
         <div ref={avatarRef} className="db-avatar-wrap">

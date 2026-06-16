@@ -30,9 +30,13 @@ export interface PunchEntry {
   make: string;
   packaging: string;
   origin: string;
+   sales_person:string;
+  broker_name?: string;
 }
 
 export interface SalePunchPayload {
+
+   purchase_type: string;
   company_to: string;
   company_from: string;
   product: string;
@@ -108,6 +112,8 @@ export interface SaleEntry {
   packaging: string;
   origin: string;
   message: string;
+  sales_person?: string;
+  broker_name?: string;
 }
 
 export interface SaleFormPayload {
@@ -128,6 +134,8 @@ export interface SaleFormPayload {
   packaging: string;
   origin: string;
   message: string;
+  sales_person:string;
+  broker_name?: string;
 }
 
 export interface SaleListResponse {

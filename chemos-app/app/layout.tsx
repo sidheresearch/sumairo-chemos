@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '../app/dashboard/dashboard.css';
+import AppShell from '@/components/AppShell';
+import { ReduxProvider } from '@/components/ReduxProvider';
 
 export const metadata: Metadata = {
-  title: 'ChemOS™ — Sales Punch-in',
-  description: 'Record and track chemical sales punch-ins in real time.',
+  title: 'ChemOS™ — Enterprise Intelligence Platform',
+  description: 'Record and track chemical sales, purchases, and business intelligence in real time.',
 };
 
 export default function RootLayout({
@@ -25,7 +28,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ReduxProvider>
+          <AppShell>{children}</AppShell>
+        </ReduxProvider>
+      </body>
     </html>
   );
 }
