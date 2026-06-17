@@ -3,6 +3,7 @@ import './globals.css';
 import '../app/dashboard/dashboard.css';
 import AppShell from '@/components/AppShell';
 import { ReduxProvider } from '@/components/ReduxProvider';
+import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
   title: 'ChemOS™ — Enterprise Intelligence Platform',
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body>
         <ReduxProvider>
           <AppShell>{children}</AppShell>
+          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         </ReduxProvider>
       </body>
     </html>

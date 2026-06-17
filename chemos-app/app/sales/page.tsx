@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Modal from '@/components/Modal';
 import SaleForm from '@/components/SaleForm';
-import { fetchFeedOptions, fetchTodaySales, createSale, deleteSale } from '@/lib/api';
+import SaleDetailModal from '@/components/SaleDetailModal';
+import { fetchFeedOptions, fetchAllSales, createSale } from '@/lib/api';
 import type { SaleEntry, FeedOptions, SaleFormPayload } from '@/lib/types';
-import { dummySaleOrders } from '@/lib/dummyData';
 
 const EMPTY_OPTIONS: FeedOptions = {
   products: [],
@@ -18,74 +18,52 @@ const EMPTY_OPTIONS: FeedOptions = {
   shipments: [],
 };
 
+const TH: React.CSSProperties = {
+  padding: '16px',
+  textAlign: 'left',
+  fontSize: '12px',
+  fontWeight: '600',
+  color: 'var(--gray)',
+};
+
 export default function SalesPage() {
   const [feedOptions, setFeedOptions] = useState<FeedOptions>(EMPTY_OPTIONS);
   const [entries, setEntries] = useState<SaleEntry[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const LIMIT = 20;
 
-  const loadSales = useCallback(async (targetPage = 1) => {
+  const loadSales = useCallback(async () => {
     setLoading(true);
     try {
-      // Using dummy data for testing - replace with real API later
-      setEntries(dummySaleOrders);
-      setTotal(dummySaleOrders.length);
-      
-      // Real API call (commented out for testing)
-      // const today = new Date().toISOString().slice(0, 10);
-      // const data = await fetchTodaySales(today, targetPage, LIMIT);
-      // setEntries(data.rows ?? []);
-      // setTotal(data.total ?? 0);
+      const data = await fetchAllSales();
+      setEntries(data);
     } catch (error) {
       console.error('Failed to load sales:', error);
     } finally {
       setLoading(false);
     }
-  }, [LIMIT]);
+  }, []);
 
   useEffect(() => {
     fetchFeedOptions().then(setFeedOptions).catch(() => {});
-    loadSales(page);
-  }, [loadSales, page]);
+    loadSales();
+  }, [loadSales]);
 
   const handleSubmitSale = async (payload: SaleFormPayload) => {
     const data = await createSale(payload);
     setIsCreateModalOpen(false);
-    setPage(1);
-    await loadSales(1);
+    await loadSales();
     return data;
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm(`Delete sale #${id}?`)) return;
-    try {
-      await deleteSale(id);
-      await loadSales(page);
-    } catch (error) {
-      console.error('Failed to delete sale:', error);
-    }
   };
 
   return (
     <div style={{ padding: '0', height: '100%' }}>
       {/* Page Header */}
-      <div
-        style={{
-          padding: '24px 32px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
+      <div className="page-header">
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px' }}>Sales Orders</h1>
-          <p style={{ color: 'var(--gray)', fontSize: '14px' }}>
-            Manage and track all sales orders and transactions
-          </p>
+          <h1>Sales Orders</h1>
+          <p>Manage and track all sales orders and transactions</p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
@@ -103,6 +81,7 @@ export default function SalesPage() {
             gap: '8px',
             boxShadow: '0 4px 12px rgba(66, 153, 225, 0.3)',
             transition: 'all 0.2s',
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
@@ -119,7 +98,7 @@ export default function SalesPage() {
       </div>
 
       {/* Content Area */}
-      <div style={{ padding: '32px' }}>
+      <div className="page-content">
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--gray)' }}>
             Loading sales orders...
@@ -158,194 +137,58 @@ export default function SalesPage() {
             </button>
           </div>
         ) : (
-          <div
-            style={{
-              background: 'var(--card)',
-              borderRadius: '12px',
-              border: '1px solid var(--border)',
-              overflow: 'hidden',
-            }}
-          >
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="table-scroll" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
               <thead>
-                <tr
-                  style={{
-                    borderBottom: '1px solid var(--border)',
-                    background: 'var(--navy-light)',
-                  }}
-                >
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    ID
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    Date
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    Product
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    Company
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    Quantity
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'right',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    Price
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px',
-                      textAlign: 'center',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      color: 'var(--gray)',
-                    }}
-                  >
-                    Actions
-                  </th>
+                <tr style={{ background: 'var(--navy-light)', borderBottom: '1px solid var(--border)' }}>
+                  <th style={TH}>Date</th>
+                  <th style={TH}>Company To</th>
+                  <th style={TH}>Company From</th>
+                  <th style={TH}>Product</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>Quantity (MT)</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>Price (₹)</th>
+                  <th style={TH}>Delivery Term</th>
+                  <th style={TH}>Port</th>
+                  <th style={{ ...TH, textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((sale) => (
                   <tr
                     key={sale.id}
-                    style={{
-                      borderBottom: '1px solid var(--border)',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
+                    style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <td
-                      style={{
-                        padding: '16px',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      #{sale.id}
-                    </td>
-                    <td style={{ padding: '16px', fontSize: '13px', color: 'var(--gray)' }}>
+                    <td style={{ padding: '16px', fontSize: '14px', color: 'var(--gray)' }}>
                       {sale.date}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '13px', fontWeight: '500' }}>
-                      {sale.product}
+                    <td style={{ padding: '16px', fontSize: '14px' }}>{sale.companyTo}</td>
+                    <td style={{ padding: '16px', fontSize: '14px', color: 'var(--gray)' }}>{sale.companyFrom}</td>
+                    <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600' }}>{sale.product}</td>
+                    <td style={{ padding: '16px', fontSize: '14px', textAlign: 'right' }}>
+                      {sale.quantity.toLocaleString('en-IN')}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '13px', color: 'var(--gray)' }}>
-                      {sale.company}
+                    <td style={{ padding: '16px', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>
+                      ₹{sale.price.toLocaleString('en-IN')}
                     </td>
-                    <td
-                      style={{
-                        padding: '16px',
-                        fontSize: '13px',
-                        textAlign: 'right',
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      {sale.quantity} MT
-                    </td>
-                    <td
-                      style={{
-                        padding: '16px',
-                        fontSize: '13px',
-                        textAlign: 'right',
-                        fontWeight: '600',
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      ₹{sale.price_inr?.toLocaleString('en-IN')}
-                    </td>
+                    <td style={{ padding: '16px', fontSize: '14px' }}>{sale.deliveryTerm ?? '—'}</td>
+                    <td style={{ padding: '16px', fontSize: '14px' }}>{sale.port ?? '—'}</td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>
                       <button
-                        onClick={() => handleDelete(sale.id)}
+                        onClick={() => setViewingId(sale.id)}
                         style={{
                           padding: '6px 12px',
-                          background: 'transparent',
-                          border: '1px solid var(--red)',
+                          background: 'var(--blue)',
+                          color: 'white',
+                          border: 'none',
                           borderRadius: '6px',
-                          color: 'var(--red)',
                           fontSize: '12px',
                           fontWeight: '600',
                           cursor: 'pointer',
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'var(--red)';
-                          e.currentTarget.style.color = 'white';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'var(--red)';
                         }}
                       >
-                        Delete
+                        View
                       </button>
                     </td>
                   </tr>
@@ -356,17 +199,21 @@ export default function SalesPage() {
         )}
       </div>
 
+      {/* Sale Detail Modal */}
+      <SaleDetailModal
+        saleId={viewingId}
+        onClose={() => setViewingId(null)}
+      />
+
       {/* Create Modal */}
       <Modal
         isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-        }}
+        onClose={() => setIsCreateModalOpen(false)}
         title="Create Sales Order"
         size="xlarge"
       >
-        <SaleForm 
-          feedOptions={feedOptions} 
+        <SaleForm
+          feedOptions={feedOptions}
           onSubmit={handleSubmitSale}
         />
       </Modal>

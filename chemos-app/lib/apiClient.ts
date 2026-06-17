@@ -1,5 +1,5 @@
 const BASE_URL =
-  (process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8081') + '/api/v1';
+  (process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://20a8-103-51-116-91.ngrok-free.app') + '/api/v1';
 
 const TOKEN_KEY = 'chemos_token';
 
@@ -50,6 +50,7 @@ async function request<T>(
     method,
     headers: {
       'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },

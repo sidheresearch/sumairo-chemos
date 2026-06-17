@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import AutocompleteInput from './AutocompleteInput';
+import CompanyAutocompleteInput from './CompanyAutocompleteInput';
+import ProductAutocompleteInput from './ProductAutocompleteInput';
+import CountryAutocompleteInput from './CountryAutocompleteInput';
+import PortAutocompleteInput from './PortAutocompleteInput';
+import PortMultiAutocompleteInput from './PortMultiAutocompleteInput';
 import type {
   FeedOptions,
   SalePunchPayload,
@@ -15,7 +21,6 @@ interface SaleEntryCardProps {
   initialData?: any;
 }
 
-type ResultState = { msg: string; ok: boolean; detail?: string } | null;
 
 const DELIVERY_TERMS = ['CIF', 'CFR', 'FOB'];
 const PURCHASE_TYPES = ['Import', 'HSS', 'Local', 'Tow'];
@@ -44,7 +49,6 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
   const [paymentDays, setPaymentDays] = useState('');
   const [port, setPort] = useState(initialData?.port || '');
   const [dischargePorts, setDischargePorts] = useState<string[]>(initialData?.discharge_ports || []);
-  const [dischargePortsOpen, setDischargePortsOpen] = useState(false); // dropdown open state
   const [marketPrice, setMarketPrice] = useState(initialData?.market_price ? String(initialData.market_price) : '');
   const [marketStatus, setMarketStatus] = useState<MarketStatusType>('');
   const [costPrice, setCostPrice] = useState('');
@@ -84,7 +88,6 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
 
   // UI state
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<ResultState>(null);
   const [dateValue, setDateValue] = useState('');
   const [dateStamp, setDateStamp] = useState('');
 
@@ -102,16 +105,6 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
     return () => clearInterval(id);
   }, []);
 
-  // Close discharge ports dropdown on outside click
-  useEffect(() => {
-    if (!dischargePortsOpen) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('#discharge-ports-wrapper')) setDischargePortsOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [dischargePortsOpen]);
 
   const clearForm = () => {
     setCompanyTo(''); setCompanyFrom(''); setProduct(''); setVesselName('');
@@ -120,7 +113,7 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
     setMarketStatus(''); setCostPrice(''); setReplacementCost(''); setMake('');
     setExpense(''); setCustomDuty(''); setSws(''); setAdd(''); setOtherExpense('');
     setPurchaseType('');
-    setPackaging(''); setOrigin(''); setResult(null);
+    setPackaging(''); setOrigin('');
     setDischargePorts([]);
     setPriceType('Fixed Price');
     setPaymentTerm('');
@@ -130,7 +123,6 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
   };
 
   const handleSubmit = async () => {
-    setResult(null);
     const qty = parseFloat(quantity);
     const fc = parseFloat(priceFc);
     const exRate = parseFloat(exchangeRate);
@@ -144,9 +136,14 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
     if (!Number.isFinite(exRate) || exRate <= 0) missing.push('Exchange Rate');
     if (!port) missing.push('Port');
     if (missing.length) {
-      setResult({ msg: 'Please fill: ' + missing.join(', '), ok: false });
+      toast.error('Please fill: ' + missing.join(', '));
       return;
     }
+
+    const priceTypeMap: Record<string, string> = {
+      'Fixed Price': 'FIXED',
+      'Formula Price': 'FORMULA',
+    };
 
     setSubmitting(true);
     try {
@@ -164,7 +161,7 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
         exchange_rate: exRate,
         price_inr: computedPriceInr,
         delivery_term: deliveryTerm,
-        payment_days: paymentDays,
+        payment_days: parseFloat(paymentDays) || 0,
         port,
         market_price: parseFloat(marketPrice) || 0,
         market_status: marketStatus,
@@ -179,20 +176,16 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
         add: parseFloat(add) || 0,
         other_expense: parseFloat(otherExpense) || 0,
         add_usd: parseFloat(addUsd) || 0,
-        discharge_ports: dischargePorts,
-        price_type: priceType,
+        discharge_ports: dischargePorts.join(', '),
+        price_type: priceTypeMap[priceType] ?? priceType,
         payment_term: paymentTerm,
         etd: etd || undefined,
         eta: eta || undefined,
       } as any);
-      setResult({
-        msg: `Punched in #${data.id} — ${qty.toLocaleString('en-IN')} MT · ${currency} ${fc.toLocaleString('en-IN')} × ₹${exRate} = ₹${computedPriceInr.toLocaleString('en-IN', { maximumFractionDigits: 2 })}/kg`,
-        ok: true,
-        detail: `${product} · ${companyTo} ← ${companyFrom} · Port: ${port}${deliveryTerm ? ' · ' + deliveryTerm : ''}`,
-      });
+      toast.success(`Order #${data.id} created — ${product} · ${qty.toLocaleString('en-IN')} MT`);
       clearForm();
     } catch (err: unknown) {
-      setResult({ msg: err instanceof Error ? err.message : 'Submission failed', ok: false });
+      toast.error(err instanceof Error ? err.message : 'Submission failed');
     } finally {
       setSubmitting(false);
     }
@@ -233,20 +226,20 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
           {/* Seller */}
           <div className="fg">
             <label className="fl">Seller <span className="req">*</span></label>
-            <AutocompleteInput id="f-company-from" value={companyFrom} onChange={setCompanyFrom}
-              options={feedOptions.companies} placeholder="Seller / supplier name" />
+            <CompanyAutocompleteInput id="f-company-from" value={companyFrom} onChange={setCompanyFrom}
+              placeholder="Seller / supplier name" />
           </div>
 
           {/* Product, Origin, Make */}
           <div className="fg">
             <label className="fl">Product <span className="req">*</span></label>
-            <AutocompleteInput id="f-product" value={product} onChange={setProduct}
-              options={feedOptions.products} placeholder="e.g. VAM (Carbide Base)" />
+            <ProductAutocompleteInput id="f-product" value={product} onChange={setProduct}
+              placeholder="e.g. VAM (Carbide Base)" />
           </div>
           <div className="fg">
             <label className="fl">Origin</label>
-            <AutocompleteInput id="f-origin" value={origin} onChange={setOrigin}
-              options={feedOptions.origins} placeholder="Country of origin" />
+            <CountryAutocompleteInput id="f-origin" value={origin} onChange={setOrigin}
+              placeholder="Country of origin" />
           </div>
           <div className="fg">
             <label className="fl">Make</label>
@@ -270,118 +263,14 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
           </div>
           <div className="fg">
             <label className="fl">Load Port <span className="req">*</span></label>
-            <select className="fi" value={port} onChange={e => setPort(e.target.value)}>
-              <option value="">Select port…</option>
-              {feedOptions.ports.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            <PortAutocompleteInput id="f-port" value={port} onChange={setPort}
+              placeholder="Search or add port…" />
           </div>
 
-          {/* Discharge Ports — multi-select dropdown */}
           <div className="fg">
             <label className="fl">Discharge Ports</label>
-            <div id="discharge-ports-wrapper" style={{ position: 'relative' }}>
-              {/* Trigger box */}
-              <div
-                className="fi"
-                onClick={() => setDischargePortsOpen(v => !v)}
-                style={{
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '4px',
-                  minHeight: '38px',
-                  paddingTop: dischargePorts.length ? '5px' : undefined,
-                  paddingBottom: dischargePorts.length ? '5px' : undefined,
-                }}
-              >
-                {dischargePorts.length === 0 ? (
-                  <span style={{ color: 'var(--placeholder, #999)', flex: 1 }}>Select ports…</span>
-                ) : (
-                  dischargePorts.map(p => (
-                    <span
-                      key={p}
-                      style={{
-                        background: 'var(--accent, #3b82f6)',
-                        color: '#fff',
-                        borderRadius: '4px',
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                    >
-                      {p}
-                      <span
-                        onClick={e => {
-                          e.stopPropagation();
-                          setDischargePorts(dischargePorts.filter(x => x !== p));
-                        }}
-                        style={{ cursor: 'pointer', fontWeight: 700, lineHeight: 1 }}
-                      >
-                        ×
-                      </span>
-                    </span>
-                  ))
-                )}
-                {/* Chevron */}
-                <span style={{ marginLeft: 'auto', paddingLeft: '6px', color: 'var(--muted, #888)' }}>
-                  {dischargePortsOpen ? '▴' : '▾'}
-                </span>
-              </div>
-
-              {/* Dropdown list */}
-              {dischargePortsOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    zIndex: 50,
-                    background: 'var(--bg-input, #fff)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '6px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                    maxHeight: '180px',
-                    overflowY: 'auto',
-                    marginTop: '2px',
-                  }}
-                >
-                  {feedOptions.ports.map(p => (
-                    <label
-                      key={p}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        background: dischargePorts.includes(p) ? 'var(--accent-light, #eff6ff)' : 'transparent',
-                        transition: 'background 0.1s',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={dischargePorts.includes(p)}
-                        onChange={e => {
-                          setDischargePorts(e.target.checked
-                            ? [...dischargePorts, p]
-                            : dischargePorts.filter(x => x !== p));
-                        }}
-                        onClick={e => e.stopPropagation()}
-                      />
-                      {p}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PortMultiAutocompleteInput value={dischargePorts} onChange={setDischargePorts}
+              placeholder="Search or add ports…" />
           </div>
 
           {/* Packaging, Market Status, Quantity, Price */}
@@ -554,13 +443,6 @@ export default function SaleEntryCard({ feedOptions, onSubmit, initialData }: Sa
           <button className="btn btn-ghost" onClick={clearForm}>Clear</button>
         </div>
 
-        {result && (
-          <div className={`result ${result.ok ? 'ok' : 'err'}`}>
-            {result.ok ? '✓ ' : '✗ '}
-            {result.msg}
-            {result.detail && <div className="result-detail">{result.detail}</div>}
-          </div>
-        )}
       </div>
     </div>
   );

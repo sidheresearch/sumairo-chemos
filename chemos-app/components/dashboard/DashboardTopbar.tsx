@@ -13,11 +13,12 @@ interface DashboardTopbarProps {
   onPeriodChange: (p: Period) => void;
   onCurrencyChange: (c: Currency) => void;
   onAsOfChange: (d: string | null) => void;
+  onMenuToggle?: () => void;
 }
 
 export default function DashboardTopbar({
   period, currency, asOf, notifications,
-  onPeriodChange, onCurrencyChange, onAsOfChange,
+  onPeriodChange, onCurrencyChange, onAsOfChange, onMenuToggle,
 }: DashboardTopbarProps) {
   const [showNotif, setShowNotif]   = useState(false);
   const [showAvatar, setShowAvatar] = useState(false);
@@ -78,6 +79,11 @@ export default function DashboardTopbar({
 
   return (
     <header className="db-topbar">
+      {/* Hamburger — mobile only */}
+      <button className="db-hamburger" onClick={onMenuToggle} aria-label="Open menu">
+        <span /><span /><span />
+      </button>
+
       {/* Left — Brand */}
       <div className="db-tb-left">
         <div className="db-tb-logo">S</div>

@@ -17,6 +17,7 @@ export default function AppShell({ children }: AppShellProps) {
   const [currency, setCurrency] = useState<Currency>('inr');
   const [asOf, setAsOf] = useState<string | null>(null);
   const [activeModule, setModule] = useState<DashboardModule>('overview');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="db-shell">
@@ -29,10 +30,16 @@ export default function AppShell({ children }: AppShellProps) {
         onPeriodChange={setPeriod}
         onCurrencyChange={setCurrency}
         onAsOfChange={setAsOf}
+        onMenuToggle={() => setMobileNavOpen((v) => !v)}
       />
 
       {/* Sidebar */}
-      <DashboardSidebar activeModule={activeModule} onModuleChange={setModule} />
+      <DashboardSidebar
+        activeModule={activeModule}
+        onModuleChange={setModule}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+      />
 
       {/* Main content */}
       <main className="db-main">{children}</main>

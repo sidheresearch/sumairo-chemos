@@ -6,7 +6,9 @@ import type {
   SaleFormPayload,
   CreateSaleResponse,
   SaleListResponse,
+  SaleEntry,
 } from './types';
+import { apiClient } from './apiClient';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? '';
 
@@ -33,14 +35,7 @@ export async function fetchTodayPunches(
 export async function createPunch(
   payload: SalePunchPayload
 ): Promise<CreatePunchResponse> {
-  const res = await fetch(`${API_BASE}/api/feed/sales_punch`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail ?? 'Submission failed');
-  return data;
+  return apiClient.post<CreatePunchResponse>('/purchase/create/purchase_order', payload);
 }
 
 export async function deletePunch(id: number): Promise<void> {
@@ -67,14 +62,15 @@ export async function fetchTodaySales(
 export async function createSale(
   payload: SaleFormPayload
 ): Promise<CreateSaleResponse> {
-  const res = await fetch(`${API_BASE}/api/feed/sales`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail ?? 'Submission failed');
-  return data;
+  return apiClient.post<CreateSaleResponse>('/sales/create/sales_order', payload);
+}
+
+export async function fetchAllSales(): Promise<SaleEntry[]> {
+  return apiClient.get<SaleEntry[]>('/sales/allSales');
+}
+
+export async function fetchSaleById(id: string): Promise<SaleEntry> {
+  return apiClient.get<SaleEntry>(`/sales/${id}`);
 }
 
 export async function deleteSale(id: number): Promise<void> {
@@ -82,4 +78,48 @@ export async function deleteSale(id: number): Promise<void> {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('Delete failed');
+}
+
+export interface PurchaseOrder {
+  id: string;
+  companyTo: string;
+  purchaseType: string;
+  companyFrom: string;
+  product: string;
+  vesselName: string;
+  shipment: string;
+  quantity: number;
+  priceFc: number;
+  currency: string | null;
+  offerUsd: number;
+  exchangeRate: number;
+  priceInr: number;
+  deliveryTerm: string;
+  paymentDays: number;
+  port: string;
+  marketPrice: number;
+  marketStatus: string;
+  costPrice: number;
+  replacementCost: number;
+  make: string;
+  packaging: string;
+  origin: string;
+  expense: number;
+  customDuty: number;
+  sws: number;
+  add: number;
+  otherExpense: number;
+  dischargePorts: string;
+  priceType: string;
+  paymentTerm: string;
+  etd: string;
+  eta: string;
+}
+
+export async function fetchAllPurchases(): Promise<PurchaseOrder[]> {
+  return apiClient.get<PurchaseOrder[]>('/purchase/allPurchase');
+}
+
+export async function fetchPurchaseById(id: string): Promise<PurchaseOrder> {
+  return apiClient.get<PurchaseOrder>(`/purchase/${id}`);
 }

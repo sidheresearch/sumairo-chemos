@@ -539,11 +539,49 @@ select.fi option { background: var(--navy-mid); color: var(--white); }
 .dash-stub a { color: var(--teal); font-size: 13px; font-weight: 600; text-decoration: none; }
 .dash-stub a:hover { text-decoration: underline; }
 
+/* ═══ PAGE LAYOUT HELPERS ═══ */
+.page-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.page-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.page-header p { color: var(--gray); font-size: 14px; }
+.page-content { padding: 32px; }
+
+@media (max-width: 768px) {
+  .page-header { padding: 16px 20px; flex-wrap: wrap; }
+  .page-header h1 { font-size: 22px; margin-bottom: 4px; }
+  .page-content { padding: 16px 20px; }
+}
+@media (max-width: 480px) {
+  .page-header { flex-direction: column; align-items: flex-start; padding: 14px 16px; }
+  .page-header > button, .page-header > a { width: 100%; justify-content: center !important; }
+  .page-content { padding: 12px 14px; }
+}
+
+/* ═══ TABLE SCROLL WRAPPER ═══ */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+.table-scroll table { min-width: 600px; }
+
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 768px) {
   .header { padding: 12px 16px; }
+  .hdr-right { gap: 6px; }
+  .dash-link { display: none; }
   .container { padding: 16px 16px 40px; }
+  .page-head { flex-direction: column; gap: 10px; }
   .page-head .title-block h1 { font-size: 18px; }
+  .user-chip { font-size: 10px; padding: 6px 10px; }
+  /* Modal: taller content area on tablet */
+  .modal-content { max-height: 94vh !important; }
 }
 
 @media (max-width: 600px) {
@@ -557,10 +595,23 @@ select.fi option { background: var(--navy-mid); color: var(--white); }
   }
   .punch-prices, .punch-qty { display: none; }
   .summary-bar { font-size: 10px; padding: 8px 10px; }
+  /* Modal full-height sheet on mobile */
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  .modal-content {
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 95vh !important;
+    width: 100% !important;
+  }
 }
 
 @media (max-width: 420px) {
   .punch-row { grid-template-columns: 1fr; }
   .btn { padding: 10px 14px; font-size: 11px; }
   .user-chip { padding: 6px 10px; font-size: 10px; }
+  .card-body { padding: 14px; }
+  .btn-row { flex-direction: column; }
+  .btn-row .btn { width: 100%; justify-content: center; }
 }

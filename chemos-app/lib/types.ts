@@ -93,49 +93,51 @@ export interface CreatePunchResponse {
 export type SaleType = 'GST Sale' | 'Bond Sale';
 
 export interface SaleEntry {
-  id: number;
-  ts: string;
-  sale_type: SaleType;
-  company_to: string;
-  company_from: string;
+  id: string;
+  date: string;
+  salesType: string;
+  companyTo: string;
+  companyFrom: string;
   product: string;
   quantity: number;
   price: number;
-  payment: string;
-  delivery_term: string;
-  port: string;
-  market_price: number;
-  market_status: MarketStatusType;
-  storage_days: number;
-  transit_tolerance: string;
-  make: string;
-  packaging: string;
-  origin: string;
-  message: string;
-  sales_person?: string;
-  broker_name?: string;
+  payment: string | null;
+  deliveryTerm: string | null;
+  port: string | null;
+  marketPrice: number | null;
+  marketStatus: string | null;
+  storageDays: number | null;
+  make: string | null;
+  packaging: string | null;
+  origin: string | null;
+  transitTolerance: string | null;
+  message: string | null;
+  vesselName: string | null;
+  remarks: string | null;
 }
 
 export interface SaleFormPayload {
-  sale_type: SaleType;
-  company_to: string;
-  company_from: string;
+  salesType: string;
+  companyTo: string;
+  companyFrom: string;
   product: string;
   quantity: number;
   price: number;
   payment: string;
-  delivery_term: string;
+  deliveryTerm: string;
   port: string;
-  market_price: number;
-  market_status: MarketStatusType;
-  storage_days: number;
-  transit_tolerance: string;
+  marketPrice: number;
+  marketStatus: string;
+  storageDays: number;
+  transitTolerance: string;
   make: string;
   packaging: string;
   origin: string;
   message: string;
-  sales_person:string;
-  broker_name?: string;
+  vesselName: string;
+  remarks: string;
+  salesPerson?: string;
+  brokerName?: string;
 }
 
 export interface SaleListResponse {

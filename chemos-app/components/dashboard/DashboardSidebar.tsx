@@ -9,6 +9,8 @@ export type DashboardModule = 'overview' | 'procurement' | 'scm' | 'finance' | '
 interface DashboardSidebarProps {
   activeModule: DashboardModule;
   onModuleChange: (m: DashboardModule) => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 type MainCategory = 'main' | 'intelligence' | 'purchase' | 'sales' | 'inventory' | 'comparable' | 'admin' | null;
@@ -106,14 +108,16 @@ const ICON_SMALL_FORM = (
   </svg>
 );
 
-export default function DashboardSidebar({ activeModule, onModuleChange }: DashboardSidebarProps) {
+export default function DashboardSidebar({ activeModule, onModuleChange, mobileOpen, onMobileClose }: DashboardSidebarProps) {
   const [activeMain, setActiveMain] = useState<MainCategory>(null);
   const pathname = usePathname();
 
   const toggleMain = (id: MainCategory) => setActiveMain((s) => (s === id ? null : id));
 
   return (
-    <aside className="db-sidebar-wrapper">
+    <>
+      {mobileOpen && <div className="db-sidebar-overlay show" onClick={onMobileClose} />}
+      <aside className={`db-sidebar-wrapper${mobileOpen ? ' mobile-open' : ''}`}>
       {/* Icon-only main column */}
       <div className="db-sb-icon-col">
         <button 
@@ -140,22 +144,22 @@ export default function DashboardSidebar({ activeModule, onModuleChange }: Dashb
           {ICON_PURCHASE}
           <span className="db-sb-icon-label">Purchase</span>
         </button>
-        <button
-          className={`db-sb-icon-btn${activeMain === 'sales' ? ' active' : ''}`}
+        <button 
+          className={`db-sb-icon-btn${activeMain === 'sales' ? ' active' : ''}`} 
           onClick={() => toggleMain('sales')}
           title="Sales"
         >
           {ICON_SALES}
           <span className="db-sb-icon-label">Sales</span>
         </button>
-        <button
+        {/* <button
           className={`db-sb-icon-btn${activeMain === 'inventory' ? ' active' : ''}`}
           onClick={() => toggleMain('inventory')}
           title="Inventory"
         >
           {ICON_INVENTORY}
           <span className="db-sb-icon-label">Inventory</span>
-        </button>
+        </button> */}
         <Link
           href="/comparable"
           className={`db-sb-icon-btn${pathname === '/comparable' ? ' active' : ''}`}
@@ -264,16 +268,6 @@ export default function DashboardSidebar({ activeModule, onModuleChange }: Dashb
             </div>
           )}
 
-          {activeMain === 'inventory' && (
-            <div className="db-sb-secondary-content">
-              <div className="db-sb-secondary-header">Inventory</div>
-              <Link href="/" className="db-sb-secondary-item" onClick={() => setActiveMain(null)}>
-                <span className="db-sb-secondary-icon">{ICON_SMALL_OVERVIEW}</span>
-                Inventory Overview
-              </Link>
-            </div>
-          )}
-
           {activeMain === 'admin' && (
             <div className="db-sb-secondary-content">
               <div className="db-sb-secondary-header">Admin</div>
@@ -286,5 +280,6 @@ export default function DashboardSidebar({ activeModule, onModuleChange }: Dashb
         </div>
       )}
     </aside>
+    </>
   );
 }
